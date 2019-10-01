@@ -37,9 +37,9 @@ enum tokens {
 	add_tk,				// '+'
 	sub_tk,				// '-'
 	mul_tk,				// '*'
-	div_tk				// '/'
+	div_tk				// 'div'
 	/**
-	 * TODO: Here is your +/-/etc tokens+
+	 * TODO: Here is your +/-/etc tokens
 	 */
 };
 
@@ -47,13 +47,22 @@ typedef std::pair<std::string, tokens> lexem;
 
 
 typedef struct synt {
-	std::ifstream code;         // input stream of Pascal code
 	char  GetCurrentCurs();     // get current character in stream
 	lexem GetLex();             // get next lexem
 
 	char  PeekChar(int n);      // peek on N symbols in stream
 	lexem PeekLex(int n);       // peek N lexem;
+	bool  FileEOF();
+	void  FileOpen(std::string file);
+	bool  FileIsOpen();
+	void  FileClose();
+	bool  FileFail();
+	int   GetCurrentLine();
 private:
+	int LineN=1;
+
+	std::ifstream code;         // input stream of Pascal code
+
 	char cursor{ -1 };         // cursor of stream
 
 	char getChar();            // get next character in stream
@@ -62,12 +71,14 @@ private:
 struct TListEl//список
 {
 	std::string Info;
+	std::string Type;
 	TListEl* Link;
 };
-TListEl* AddInf(std::string info, TListEl* pList)//добавление в список
+TListEl* AddInf(std::string info, std::string Type, TListEl* pList)//добавление в список
 {
 	TListEl* pElem = new TListEl;
 	pElem->Info = info;
+	pElem->Type = Type;
 	pElem->Link = pList;
 
 	return pElem;
@@ -84,26 +95,35 @@ int SList(TListEl* pList, std::string ident)//поиск в списке
 	return 0;
 }
 struct variable {//структура для работы с переменными
-	void VarSave(std::string ident);//сохранение переменной
+	void VarSave(std::string ident, std::string Type);//сохранение переменной
 	int VarSearch(std::string ident);//поиск переменной
 //private:
 	TListEl* VarAr=NULL;
 } VarList;
 
-void variable::VarSave(std::string ident)
+void variable::VarSave(std::string ident, std::string Type)
 {
-	VarAr=AddInf(ident, VarAr);
+	VarAr=AddInf(ident, Type, VarAr);
 }
 int variable::VarSearch(std::string ident)
 {
 	return SList(VarAr, ident);
 }
-void ErrMesage(int StrN, std::string StrIn)//вывод инф. об ошибках
+void ErrMesage(int StrN, lexem Lex, std::string Type)//вывод инф. об ошибках
 {
-	if (StrIn != "")
-		std::cout << "Error found in line " << StrN << "\nType of error: " << StrIn << std::endl;
-	else
-		std::cout << "Error found in line " << StrN << std::endl;
+
+	//if (StrIn != "")
+		std::cout << "Error found in line " << StrN << " in lex: \"" << Lex.first << "\"\nType of error: " << Type << std::endl;
+	//else
+		//std::cout << "Error found in line " << StrN << std::endl;*/
+}
+void ErrMesage(std::string Type)
+{
+	std::cout << "\nType of error: " << Type << std::endl;
+}
+void ErrMesage(int StrN, char ch, std::string Type)
+{
+	std::cout << "Error found in line " << StrN << " in lex: \"" << ch << "\"\nType of error: " << Type << std::endl;
 }
 /**
  * @brief Get next character (symbol)
@@ -114,7 +134,8 @@ void ErrMesage(int StrN, std::string StrIn)//вывод инф. об ошибк�
  */
 char synt_t::getChar() {
 	if (code.fail()) {
-		std::cerr << "<E> Can't read from the file" << std::endl;
+		ErrMesage("Can't read from the file");
+		//std::cerr << "<E> Can't read from the file" << std::endl;
 		throw std::runtime_error("File doesn't available");
 	}
 
@@ -122,7 +143,8 @@ char synt_t::getChar() {
 		code >> std::noskipws >> cursor;
 	}
 	else {
-		std::cerr << "<E> File is EOF early" << std::endl;
+		ErrMesage("File is EOF early");
+		//std::cerr << "<E> File is EOF early" << std::endl;
 		throw std::runtime_error("File is EOF early");
 	}
 
@@ -178,6 +200,8 @@ lexem synt_t::GetLex() {
 	try {
 		auto ch = GetCurrentCurs();
 		while (ch == -1 || ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t') {
+			if (ch == '\n')
+				LineN++;
 			ch = getChar();
 		}
 
@@ -224,7 +248,8 @@ lexem synt_t::GetLex() {
 			case '*': tok = mul_tk;   break;
 			case '/': tok = div_tk;   break;
 			default: {
-				std::cerr << "<E> Unknown token " << ch << std::endl; break;
+				ErrMesage(GetCurrentLine(), ch, "Unknown token");
+				//std::cerr << "<E> Unknown token " << ch << std::endl; break;
 			}
 			}
 			lex += ch;
@@ -241,7 +266,8 @@ lexem synt_t::GetLex() {
 			return std::make_pair(lex, tok);
 		}
 		else {
-			std::cerr << "<E> Unknown token " << ch << std::endl;
+			ErrMesage(GetCurrentLine(), ch, "Unknown token");
+			//std::cerr << "<E> Unknown token " << ch << std::endl;
 		}
 
 		return std::make_pair("", unknown_tk);
@@ -273,12 +299,38 @@ lexem synt_t::PeekLex(int n) {
 		return res;
 	}
 	catch (const std::exception & exp) {
-		std::cerr << "<E> You try to peek too much forward, get back" << std::endl;
+		ErrMesage("You try to peek too much forward, get back");
+		//std::cerr << "<E> You try to peek too much forward, get back" << std::endl;
 		code.seekg(curr_pos, code.beg);
 		cursor = curr_curs;
 
 		return std::make_pair("", unknown_tk);
 	}
+}
+
+bool synt_t::FileEOF()
+{
+	return code.eof();
+}
+void  synt_t::FileOpen(std::string file)
+{
+	code.open(file);
+}
+bool  synt_t::FileIsOpen()
+{
+	return code.is_open();
+}
+void  synt_t::FileClose()
+{
+	code.close();
+}
+bool  synt_t::FileFail()
+{
+	return code.fail();
+}
+int   synt_t::GetCurrentLine()
+{
+	return LineN;
 }
 
 /********** prototypes of functions ***************/
@@ -327,7 +379,8 @@ int expressionParse(lexem lex, synt_t& parser) {
 				lex = parser.GetLex();
 				lex = parser.GetLex();
 				if (lex.second != id_tk && lex.second != constant_tk) {
-					std::cerr << "<E> Must be identificator or constant" << std::endl;
+					ErrMesage(parser.GetCurrentLine(), lex, "Must be identificator or constant");
+					//std::cerr << "<E> Must be identificator or constant" << std::endl;
 					return -EXIT_FAILURE;
 				}
 			}
@@ -340,7 +393,8 @@ int expressionParse(lexem lex, synt_t& parser) {
 		break;
 	}
 	default: {
-		std::cerr << "<E> Must be identificator or constant or '-' or '('"<< std::endl;
+		ErrMesage(parser.GetCurrentLine(), lex, "Must be identificator or constant or '-' or '('");
+		//std::cerr << "<E> Must be identificator or constant or '-' or '('"<< std::endl;
 		return -EXIT_FAILURE;
 	}
 	}
@@ -365,13 +419,15 @@ int stateParse(lexem& lex, synt_t& parser) {
 		 * TODO: Here you have to check existence of variable+
 		 */
 		if (VarList.VarSearch(lex.first) != 1) {
-			std::cerr << "<E> Unknown identificator" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "undeclared identificator");
+			//std::cerr << "<E> undeclared identificator" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
 		lex = parser.GetLex();
 		if (lex.second != ass_tk) {
-			std::cerr << "<E> := is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, ":= is absent");
+			//std::cerr << "<E> := is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
@@ -379,7 +435,8 @@ int stateParse(lexem& lex, synt_t& parser) {
 
 		lex = parser.GetLex();
 		if (lex.second != semi_tk) {
-			std::cerr << "<E> ; is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 		break;
@@ -388,7 +445,8 @@ int stateParse(lexem& lex, synt_t& parser) {
 		compoundParse(lex, parser);
 		lex = parser.GetLex();
 		if (lex.second != semi_tk) {
-			std::cerr << "<E> ';' is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "';' is absent");
+			//std::cerr << "<E> ';' is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 		break;
@@ -416,8 +474,9 @@ int compoundParse(lexem lex, synt_t& parser) {
 	compound_count++;
 	while (lex.second != end_tk) {
 		buildTreeStub(lex); // Here is your Tree realization
-		if (parser.code.eof()) {
-			std::cerr << "<E> Each begin must be closed by 'end'" << std::endl;
+		if (parser.FileEOF()) {
+			ErrMesage(parser.GetCurrentLine(), lex, "Each begin must be closed by 'end'");
+			//std::cerr << "<E> Each begin must be closed by 'end'" << std::endl;
 			return -EXIT_FAILURE;
 		}
 		stateParse(lex, parser);
@@ -425,7 +484,8 @@ int compoundParse(lexem lex, synt_t& parser) {
 
 	if (compound_count == 1) {
 		if (parser.PeekLex(1).second == unknown_tk) {
-			std::cerr << "<E> '.' is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "'.' is absent");
+			//std::cerr << "<E> '.' is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 	}
@@ -443,11 +503,26 @@ int compoundParse(lexem lex, synt_t& parser) {
  */
 lexem vardParse(lexem lex, synt_t& parser) {
 	lex = parser.GetLex();
+	lexem VarType;
+	int i=0;
 	if (lex.second != id_tk) {
-		std::cerr << "<E> Here must be identificator" << std::endl;
+		ErrMesage(parser.GetCurrentLine(), lex, "Here must be identificator");
+		//std::cerr << "<E> Here must be identificator" << std::endl;
 		return lex;
 	}
-	VarList.VarSave(lex.first);
+	if (VarList.VarSearch(lex.first) != 1)
+	{
+		do
+		{
+			i++;
+			VarType = parser.PeekLex(i + 1);
+			if (VarType.second == type_tk)
+				VarList.VarSave(lex.first, VarType.first);
+		} while (VarType.second != semi_tk && VarType.second != type_tk);
+	}
+	else
+		ErrMesage(parser.GetCurrentLine(), lex, "This_identificator_already_used");
+		//std::cerr << "<E> This identificator already used" << std::endl;
 	/**
 	 *  TODO: Here save list of identificators+
 	 */
@@ -475,15 +550,18 @@ int blockParse(lexem lex, synt_t& parser) {
 	case var_tk: {   // var a, b: integer;
 		lex = vardParse(lex, parser);
 		if (lex.second != ddt_tk)
-			std::cerr << "<E> : is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, ": is absent");
+			//std::cerr << "<E> : is absent" << std::endl;
 
 		lex = parser.GetLex();
 		if (lex.second != type_tk)
-			std::cerr << "<E> Identificator must have type" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "Identificator must have type");
+			//std::cerr << "<E> Identificator must have type" << std::endl;
 
 		lex = parser.GetLex();
 		if (lex.second != semi_tk) {
-			std::cerr << "<E> ; is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
@@ -500,7 +578,8 @@ int blockParse(lexem lex, synt_t& parser) {
 		return 1;
 	}
 	default: {
-		std::cerr << "<E> Unknown lexem" << std::endl;
+		ErrMesage(parser.GetCurrentLine(), lex, "Unknown lexem");
+		//std::cerr << "<E> Unknown lexem" << std::endl;
 		return -EXIT_FAILURE;
 	}
 	}
@@ -522,23 +601,27 @@ int programParse(synt_t& parser) {
 	if (lex.second == program_tk) {
 		lex = parser.GetLex();
 		if (lex.second != id_tk) {
-			std::cerr << "<E> Name of program is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "Name of program is absent");
+			//std::cerr << "<E> Name of program is absent" << std::endl;
 			if (lex.second != semi_tk) {
-				std::cerr << "<E> ; is absent" << std::endl;
+				ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+				//std::cerr << "<E> ; is absent" << std::endl;
 				return -EXIT_FAILURE;
 			}
 		}
 
 		lex = parser.GetLex();
 		if (lex.second != semi_tk) {
-			std::cerr << "<E> ; is absent" << std::endl;
+			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
 		return EXIT_SUCCESS;
 	}
 	else {
-		std::cerr << "<E> Undefined type of program" << std::endl;
+		ErrMesage(parser.GetCurrentLine(), lex, "Undefined type of program");
+		//std::cerr << "<E> Undefined type of program" << std::endl;
 		return -EXIT_FAILURE;
 	}
 }
@@ -555,24 +638,25 @@ int Parse2(const std::string& file_path) {
 	try {
 		synt_t example_synt;
 
-		example_synt.code.open(file_path);
-		if (!example_synt.code.is_open()) {
-			std::cerr << "<E> Can't open file" << std::endl;
+		example_synt.FileOpen(file_path);
+		if (!example_synt.FileIsOpen()) {
+			ErrMesage("Can't open file");
+			//std::cerr << "<E> Can't open file" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
 		if (programParse(example_synt) != 0) {
-			example_synt.code.close();
+			example_synt.FileClose();
 			return -EXIT_FAILURE;
 		}
 
 		lexem lex;
-		while (!example_synt.code.eof() && !example_synt.code.fail()) {
+		while (!example_synt.FileEOF() && !example_synt.FileFail()) {
 			if (blockParse(lex, example_synt) == 1)
 				break;
 		}
 
-		example_synt.code.close();
+		example_synt.FileClose();
 		return EXIT_SUCCESS;
 	}
 	catch (const std::exception & exp) {
