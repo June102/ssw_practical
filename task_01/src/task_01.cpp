@@ -43,8 +43,22 @@ enum tokens {
 	 */
 };
 
-typedef std::pair<std::string, tokens> lexem;
+//typedef std::pair<std::string, tokens> lexem;
 
+struct lexem
+{
+	lexem LexIn(std::string lex, tokens tk, int N);
+	std::string info;
+	tokens token;
+	int NLine;
+}Lexem;
+lexem lexem::LexIn(std::string lex, tokens tk, int N)
+{
+	info = lex;
+	token = tk;
+	NLine = N;
+	return Lexem;
+}
 
 typedef struct synt {
 	char  GetCurrentCurs();     // get current character in stream
@@ -97,7 +111,8 @@ int SList(TListEl* pList, std::string ident)//поиск в списке
 struct variable {//структура для работы с переменными
 	void VarSave(std::string ident, std::string Type);//сохранение переменной
 	int VarSearch(std::string ident);//поиск переменной
-//private:
+	void DelList();
+private:
 	TListEl* VarAr=NULL;
 } VarList;
 
@@ -109,13 +124,13 @@ int variable::VarSearch(std::string ident)
 {
 	return SList(VarAr, ident);
 }
-void ErrMesage(int StrN, lexem Lex, std::string Type)//вывод инф. об ошибках
+void variable::DelList()
 {
-
-	//if (StrIn != "")
-		std::cout << "Error found in line " << StrN << " in lex: \"" << Lex.first << "\"\nType of error: " << Type << std::endl;
-	//else
-		//std::cout << "Error found in line " << StrN << std::endl;*/
+	delete VarAr;
+}
+void ErrMesage(lexem Lex, std::string Type)//вывод инф. об ошибках
+{
+		std::cout << "Error found in line " << Lex.NLine << " in lex: \"" << Lex.info << "\"\nType of error: " << Type << std::endl;
 }
 void ErrMesage(std::string Type)
 {
@@ -125,6 +140,35 @@ void ErrMesage(int StrN, char ch, std::string Type)
 {
 	std::cout << "Error found in line " << StrN << " in lex: \"" << ch << "\"\nType of error: " << Type << std::endl;
 }
+struct LexTable
+{
+	void LexInTable(lexem lex);
+	lexem GetLexT();
+	lexem PeekLexT(int i);
+	bool EmptyT();
+private:
+	std::vector <lexem> Lexems;
+};
+void LexTable::LexInTable(lexem lex)
+{
+	Lexems.insert(Lexems.begin(), lex);
+}
+lexem LexTable::GetLexT()
+{
+	lexem Lex = Lexems.back();
+	Lexems.pop_back();
+	return Lex;
+}
+lexem LexTable::PeekLexT(int i)
+{
+	lexem Lex = Lexems.at(Lexems.size() - i);
+	return Lex;
+}
+bool LexTable::EmptyT()
+{
+	return Lexems.empty();
+}
+
 /**
  * @brief Get next character (symbol)
  * @param none
@@ -218,7 +262,7 @@ lexem synt_t::GetLex() {
 				ch = getChar();
 			}
 
-			return std::make_pair(lex, constant_tk);
+			return Lexem.LexIn(lex, constant_tk, LineN);// std::make_pair(lex, constant_tk);
 		}
 		else if (std::isalpha(static_cast<unsigned char>(ch))) { // Identificators
 			while (isId(ch)) {
@@ -226,13 +270,13 @@ lexem synt_t::GetLex() {
 				ch = getChar();
 			}
 
-			if (lex == "program") { return std::make_pair(lex, program_tk); }
-			else if (lex == "var") { return std::make_pair(lex, var_tk); }
-			else if (lex == "begin") { return std::make_pair(lex, begin_tk); }
-			else if (lex == "integer") { return std::make_pair(lex, type_tk); }
-			else if (lex == "end") { return std::make_pair(lex, end_tk); }
+			if (lex == "program") { return Lexem.LexIn(lex, program_tk, LineN); } //std::make_pair(lex, program_tk); }
+			else if (lex == "var") { return Lexem.LexIn(lex, var_tk, LineN); } //std::make_pair(lex, var_tk); }
+			else if (lex == "begin") { return Lexem.LexIn(lex, begin_tk, LineN); } //std::make_pair(lex, begin_tk); }
+			else if (lex == "integer") { return Lexem.LexIn(lex, type_tk, LineN); } //std::make_pair(lex, type_tk); }
+			else if (lex == "end") { return Lexem.LexIn(lex, end_tk, LineN); } //std::make_pair(lex, end_tk); }
 			else { // it is ID
-				return std::make_pair(lex, id_tk);
+				return Lexem.LexIn(lex, id_tk, LineN); //std::make_pair(lex, id_tk);
 			}
 		}
 		else if (std::ispunct(static_cast<unsigned char>(ch))) { // Other symbols
@@ -263,17 +307,17 @@ lexem synt_t::GetLex() {
 			}
 
 			getChar(); // some kind of k o s t y l; here we look on \n
-			return std::make_pair(lex, tok);
+			return Lexem.LexIn(lex, tok, LineN); //std::make_pair(lex, tok);
 		}
 		else {
 			ErrMesage(GetCurrentLine(), ch, "Unknown token");
 			//std::cerr << "<E> Unknown token " << ch << std::endl;
 		}
 
-		return std::make_pair("", unknown_tk);
+		return Lexem.LexIn("", unknown_tk, LineN); //std::make_pair("", unknown_tk);
 	}
 	catch (const std::exception & exp) {
-		return std::make_pair("", unknown_tk);
+		return Lexem.LexIn("", unknown_tk, LineN); //std::make_pair("", unknown_tk);
 	}
 }
 
@@ -304,7 +348,7 @@ lexem synt_t::PeekLex(int n) {
 		code.seekg(curr_pos, code.beg);
 		cursor = curr_curs;
 
-		return std::make_pair("", unknown_tk);
+		return Lexem.LexIn("", unknown_tk, LineN); //std::make_pair("", unknown_tk);
 	}
 }
 
@@ -334,15 +378,20 @@ int   synt_t::GetCurrentLine()
 }
 
 /********** prototypes of functions ***************/
+void  BuildLexTable(synt_t& parser, LexTable& Table);
 void  buildTreeStub(lexem lex);
-int   expressionParse(lexem lex, synt_t& parser);
-int   stateParse(lexem& lex, synt_t& parser);
-int   compoundParse(lexem lex, synt_t& parser);
-lexem vardParse(lexem lex, synt_t& parser);
-int   blockParse(lexem lex, synt_t& parser);
+int   expressionParse(lexem lex, LexTable& Table);
+int   stateParse(lexem& lex, LexTable& Table);
+int   compoundParse(lexem lex, LexTable& Table);
+lexem vardParse(lexem lex, LexTable& Table);
+int   blockParse(lexem lex, LexTable& Table);
 int   programParse(synt_t& parser);
 /*************************************************/
-
+void  BuildLexTable(synt_t& parser, LexTable& Table)
+{
+	while (!parser.FileEOF() && !parser.FileFail())
+		Table.LexInTable(parser.GetLex());
+}
 /**
  * @brief Stub for building tree
  * @param[in] lex - current lexem
@@ -364,28 +413,20 @@ void buildTreeStub(lexem lex) {
  * @return  EXIT_SUCCESS - if expression part is matched to grammar
  * @return -EXIT_FAILURE - if expression part doesn't matched to grammar
  */
-int expressionParse(lexem lex, synt_t& parser) {
-	lex = parser.GetLex();
-	switch (lex.second) {
+int expressionParse(lexem lex, LexTable& Table) {
+	lex = Table.GetLexT();
+	switch (lex.token) {
 	case id_tk:
 	case constant_tk: {
 		/**
 		 * TODO: Here you have to check existence of operations (+/-/'*'/'/'/etc)+
 		 */
-		lex = parser.PeekLex(1);
-		do
-		{
-			if (lex.second == add_tk || lex.second == sub_tk || lex.second == mul_tk || lex.second == div_tk) {
-				lex = parser.GetLex();
-				lex = parser.GetLex();
-				if (lex.second != id_tk && lex.second != constant_tk) {
-					ErrMesage(parser.GetCurrentLine(), lex, "Must be identificator or constant");
-					//std::cerr << "<E> Must be identificator or constant" << std::endl;
-					return -EXIT_FAILURE;
-				}
-			}
-			lex = parser.PeekLex(1);
-		} while (lex.second != semi_tk);
+		lex = Table.PeekLexT(1);
+		
+		if (lex.token == add_tk || lex.token == sub_tk || lex.token == mul_tk || lex.token == div_tk) {
+			lex = Table.GetLexT();
+			expressionParse(lex, Table);
+		}
 		 /**
 		  * Also check priority of operations
 		  */
@@ -393,7 +434,7 @@ int expressionParse(lexem lex, synt_t& parser) {
 		break;
 	}
 	default: {
-		ErrMesage(parser.GetCurrentLine(), lex, "Must be identificator or constant or '-' or '('");
+		ErrMesage(lex, "Must be identificator or constant");
 		//std::cerr << "<E> Must be identificator or constant or '-' or '('"<< std::endl;
 		return -EXIT_FAILURE;
 	}
@@ -411,41 +452,41 @@ int expressionParse(lexem lex, synt_t& parser) {
  * @return  EXIT_SUCCESS - if state part is matched to grammar
  * @return -EXIT_FAILURE - if state part doesn't matched to grammar
  */
-int stateParse(lexem& lex, synt_t& parser) {
-	lex = parser.GetLex();
-	switch (lex.second) {
+int stateParse(lexem& lex, LexTable& Table) {
+	lex = Table.GetLexT();
+	switch (lex.token) {
 	case id_tk: { // a := b (assign part)
 		/**
 		 * TODO: Here you have to check existence of variable+
 		 */
-		if (VarList.VarSearch(lex.first) != 1) {
-			ErrMesage(parser.GetCurrentLine(), lex, "undeclared identificator");
+		if (VarList.VarSearch(lex.info) != 1) {
+			ErrMesage(lex, "undeclared identificator");
 			//std::cerr << "<E> undeclared identificator" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
-		lex = parser.GetLex();
-		if (lex.second != ass_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, ":= is absent");
+		lex = Table.GetLexT();
+		if (lex.token != ass_tk) {
+			ErrMesage(lex, ":= is absent");
 			//std::cerr << "<E> := is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 
-		expressionParse(lex, parser);
+		expressionParse(lex, Table);
 
-		lex = parser.GetLex();
-		if (lex.second != semi_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+		lex = Table.GetLexT();
+		if (lex.token != semi_tk) {
+			ErrMesage(lex, "; is absent");
 			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
 		break;
 	}
 	case begin_tk: { // compound statements
-		compoundParse(lex, parser);
-		lex = parser.GetLex();
-		if (lex.second != semi_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "';' is absent");
+		compoundParse(lex, Table);
+		lex = Table.GetLexT();
+		if (lex.token != semi_tk) {
+			ErrMesage(lex, "';' is absent");
 			//std::cerr << "<E> ';' is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
@@ -469,22 +510,22 @@ int stateParse(lexem& lex, synt_t& parser) {
  * @return  EXIT_SUCCESS - if compound part is matched to grammar
  * @return -EXIT_FAILURE - if compound part doesn't matched to grammar
  */
-int compoundParse(lexem lex, synt_t& parser) {
+int compoundParse(lexem lex, LexTable& Table) {
 	static int compound_count = 0;
 	compound_count++;
-	while (lex.second != end_tk) {
+	while (lex.token != end_tk) {
 		buildTreeStub(lex); // Here is your Tree realization
-		if (parser.FileEOF()) {
-			ErrMesage(parser.GetCurrentLine(), lex, "Each begin must be closed by 'end'");
+		if (Table.EmptyT()) {
+			ErrMesage(lex, "Each begin must be closed by 'end'");
 			//std::cerr << "<E> Each begin must be closed by 'end'" << std::endl;
 			return -EXIT_FAILURE;
 		}
-		stateParse(lex, parser);
+		stateParse(lex, Table);
 	}
 
 	if (compound_count == 1) {
-		if (parser.PeekLex(1).second == unknown_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "'.' is absent");
+		if (Table.PeekLexT(1).token == unknown_tk) {
+			ErrMesage(lex, "'.' is absent");
 			//std::cerr << "<E> '.' is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
@@ -501,35 +542,35 @@ int compoundParse(lexem lex, synt_t& parser) {
  *
  * @return lexem - last parsed lexem (will actually return ':')
  */
-lexem vardParse(lexem lex, synt_t& parser) {
-	lex = parser.GetLex();
+lexem vardParse(lexem lex, LexTable& Table) {
+	lex = Table.GetLexT();
 	lexem VarType;
 	int i=0;
-	if (lex.second != id_tk) {
-		ErrMesage(parser.GetCurrentLine(), lex, "Here must be identificator");
+	if (lex.token != id_tk) {
+		ErrMesage(lex, "Here must be identificator");
 		//std::cerr << "<E> Here must be identificator" << std::endl;
 		return lex;
 	}
-	if (VarList.VarSearch(lex.first) != 1)
+	if (VarList.VarSearch(lex.info) != 1)
 	{
 		do
 		{
 			i++;
-			VarType = parser.PeekLex(i + 1);
-			if (VarType.second == type_tk)
-				VarList.VarSave(lex.first, VarType.first);
-		} while (VarType.second != semi_tk && VarType.second != type_tk);
+			VarType = Table.PeekLexT(i + 1);
+			if (VarType.token == type_tk)
+				VarList.VarSave(lex.info, VarType.info);
+		} while (VarType.token != semi_tk && VarType.token != type_tk);
 	}
 	else
-		ErrMesage(parser.GetCurrentLine(), lex, "This_identificator_already_used");
+		ErrMesage(lex, "This_identificator_already_used");
 		//std::cerr << "<E> This identificator already used" << std::endl;
 	/**
 	 *  TODO: Here save list of identificators+
 	 */
 
-	lex = parser.GetLex();
-	if (lex.second == comma_tk)
-		return vardParse(lex, parser); // Раскручивая стек обратно,
+	lex = Table.GetLexT();
+	if (lex.token == comma_tk)
+		return vardParse(lex, Table); // Раскручивая стек обратно,
 									   // будет возвращено последнее значение
 
 	return lex;
@@ -544,23 +585,23 @@ lexem vardParse(lexem lex, synt_t& parser) {
  * @return  EXIT_SUCCESS - if block part is matched to grammar
  * @return -EXIT_FAILURE - if block part doesn't matched to grammar
  */
-int blockParse(lexem lex, synt_t& parser) {
-	lex = parser.GetLex();
-	switch (lex.second) { // var / begin
+int blockParse(lexem lex, LexTable& Table) {
+	lex = Table.GetLexT();
+	switch (lex.token) { // var / begin
 	case var_tk: {   // var a, b: integer;
-		lex = vardParse(lex, parser);
-		if (lex.second != ddt_tk)
-			ErrMesage(parser.GetCurrentLine(), lex, ": is absent");
+		lex = vardParse(lex, Table);
+		if (lex.token != ddt_tk)
+			ErrMesage(lex, ": is absent");
 			//std::cerr << "<E> : is absent" << std::endl;
 
-		lex = parser.GetLex();
-		if (lex.second != type_tk)
-			ErrMesage(parser.GetCurrentLine(), lex, "Identificator must have type");
+		lex = Table.GetLexT();
+		if (lex.token != type_tk)
+			ErrMesage(lex, "Identificator must have type");
 			//std::cerr << "<E> Identificator must have type" << std::endl;
 
-		lex = parser.GetLex();
-		if (lex.second != semi_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+		lex = Table.GetLexT();
+		if (lex.token != semi_tk) {
+			ErrMesage(lex, "; is absent");
 			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
@@ -570,15 +611,16 @@ int blockParse(lexem lex, synt_t& parser) {
 		break;
 	}
 	case begin_tk: {
-		compoundParse(lex, parser);
+		compoundParse(lex, Table);
 		break;
 	}
 	case dot_tk: {
 		std::cout << "Program was parse successfully" << std::endl;
+		VarList.DelList();
 		return 1;
 	}
 	default: {
-		ErrMesage(parser.GetCurrentLine(), lex, "Unknown lexem");
+		ErrMesage(lex, "Unknown lexem");
 		//std::cerr << "<E> Unknown lexem" << std::endl;
 		return -EXIT_FAILURE;
 	}
@@ -596,23 +638,23 @@ int blockParse(lexem lex, synt_t& parser) {
  * @return -EXIT_FAILURE - if input program part is incorrect
  * @note Wait input like: program <id_tk> ;
  */
-int programParse(synt_t& parser) {
-	auto lex = parser.GetLex();
-	if (lex.second == program_tk) {
-		lex = parser.GetLex();
-		if (lex.second != id_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "Name of program is absent");
+int programParse(LexTable& Table) {
+	auto lex = Table.GetLexT();
+	if (lex.token == program_tk) {
+		lex = Table.GetLexT();
+		if (lex.token != id_tk) {
+			ErrMesage(lex, "Name of program is absent");
 			//std::cerr << "<E> Name of program is absent" << std::endl;
-			if (lex.second != semi_tk) {
-				ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+			if (lex.token != semi_tk) {
+				ErrMesage(lex, "; is absent");
 				//std::cerr << "<E> ; is absent" << std::endl;
 				return -EXIT_FAILURE;
 			}
 		}
 
-		lex = parser.GetLex();
-		if (lex.second != semi_tk) {
-			ErrMesage(parser.GetCurrentLine(), lex, "; is absent");
+		lex = Table.GetLexT();
+		if (lex.token != semi_tk) {
+			ErrMesage(lex, "; is absent");
 			//std::cerr << "<E> ; is absent" << std::endl;
 			return -EXIT_FAILURE;
 		}
@@ -620,7 +662,7 @@ int programParse(synt_t& parser) {
 		return EXIT_SUCCESS;
 	}
 	else {
-		ErrMesage(parser.GetCurrentLine(), lex, "Undefined type of program");
+		ErrMesage(lex, "Undefined type of program");
 		//std::cerr << "<E> Undefined type of program" << std::endl;
 		return -EXIT_FAILURE;
 	}
@@ -637,22 +679,23 @@ int programParse(synt_t& parser) {
 int Parse2(const std::string& file_path) {
 	try {
 		synt_t example_synt;
-
+		LexTable TableOfLex;
 		example_synt.FileOpen(file_path);
 		if (!example_synt.FileIsOpen()) {
 			ErrMesage("Can't open file");
 			//std::cerr << "<E> Can't open file" << std::endl;
 			return -EXIT_FAILURE;
 		}
-
-		if (programParse(example_synt) != 0) {
+		BuildLexTable(example_synt, TableOfLex);
+		if (programParse(TableOfLex) != 0) {
 			example_synt.FileClose();
+			VarList.DelList();
 			return -EXIT_FAILURE;
 		}
 
 		lexem lex;
-		while (!example_synt.FileEOF() && !example_synt.FileFail()) {
-			if (blockParse(lex, example_synt) == 1)
+		while (!TableOfLex.EmptyT()) {
+			if (blockParse(lex, TableOfLex) == 1)
 				break;
 		}
 
