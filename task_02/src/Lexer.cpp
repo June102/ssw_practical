@@ -18,7 +18,7 @@ Lexer::~Lexer() {
     code.close();
 }
 
-
+void PrintError(errors t_err);
 /**
  * @brief Scan code and build table of lexemes
  * @param[in] file_path - path to the file with code
@@ -26,21 +26,23 @@ Lexer::~Lexer() {
  * @return table of lexeme
  */
 std::vector<Lexem> Lexer::ScanCode() {
-    try {
-        if (!code.is_open()) {
-            std::cerr << "<E> Can't open file" << std::endl;
-            return lex_table;
-        }
+	try {
+		if (!code.is_open()) {
+			//std::cerr << "<E> Can't open file" << std::endl;
+			PrintError(CANT_OPEN_FILE);
+			return lex_table;
+		}
 
-        while(!code.eof()) {
-            lex_table.emplace_back(getLex());
-        }
+		while (!code.eof()) {
+			lex_table.emplace_back(getLex());
+		}
 
-        return lex_table;
-    } catch (const std::exception &exp) {
-        std::cerr << "<E> Catch exception in " << __func__ << ": " << exp.what() << std::endl;
-        return lex_table;
-    }
+		return lex_table;
+	}
+	catch (const std::exception & exp) {
+		std::cerr << "<E> Catch exception in " << __func__ << ": " << exp.what() << std::endl;
+		return lex_table;
+	}
 }
 
 
@@ -103,7 +105,7 @@ Lexem Lexer::getLex() {
                 case '*' : tok = mul_tk;   break;
                 case '/' : tok = div_tk;   break; // TODO: rewrite for Pascal div
                 default: {
-                    std::cerr << "<E> Unknown token " << ch << std::endl;
+                    PrintError(UNKNOWN_TK);
                     tok = unknown_tk;
                     break;
                 }
@@ -122,7 +124,7 @@ Lexem Lexer::getLex() {
             getChar(); // some kind of k o s t y l; here we look on \n
             return Lexem(std::move(lex), tok, line);
         } else {
-            std::cerr << "<E> Unknown token " << ch << std::endl;
+            PrintError(UNKNOWN_TK);
         }
 
         return Lexem("", unknown_tk, line);
@@ -140,16 +142,15 @@ Lexem Lexer::getLex() {
  */
 char Lexer::getChar() {
     if (code.fail()) {
-        std::cerr << "<E> Can't read from the file" << std::endl;
-        throw std::runtime_error("File doesn't available");
+        PrintError(UNKNOWN_TK);
     }
 
     if (!code.eof()) {
         code >> std::noskipws >> cursor;
     } else {
-        std::cerr << "<E> File is EOF early" << std::endl;
-        throw std::runtime_error("File is EOF early");
+        PrintError(UNKNOWN_TK);
     }
 
     return cursor;
 }
+
