@@ -35,18 +35,26 @@ enum tokens {
 
 
 enum errors {
-    UNKNOWN_LEXEM,   // Unknown lexeme
-    EOF_ERR,         // End of file error
-    MUST_BE_ID,      // Error: Must be identifier
-    MUST_BE_SEMI,    // Error: Must be ';'
-    MUST_BE_PROG,    // Error: Must be 'program'
-    MUST_BE_COMMA,   // Error: Must be ','
-    MUST_BE_TYPE,    // Error: Must be type of identifier
-    MUST_BE_DOT,     // Error: Must be '.'
-    MUST_BE_ASS,     // Error: Must be ':='
-    DUPL_ID_ERR,     // Error: Duplicate declaration on identifier
-    UNKNOWN_ID,      // Error: Undefined identifier
-    // TODO: Add other types of error
+	UNKNOWN_LEXEM,   // Unknown lexeme
+	EOF_ERR,         // End of file error
+	MUST_BE_ID,      // Error: Must be identifier
+	MUST_BE_SEMI,    // Error: Must be ';'
+	MUST_BE_PROG,    // Error: Must be 'program'
+	MUST_BE_COMMA,   // Error: Must be ','
+	MUST_BE_TYPE,    // Error: Must be type of identifier
+	MUST_BE_DOT,     // Error: Must be '.'
+	MUST_BE_ASS,     // Error: Must be ':='
+	DUPL_ID_ERR,     // Error: Duplicate declaration on identifier
+	UNKNOWN_ID,      // Error: Undefined identifier
+	CANT_OPEN_FILE,	 // Error: Can't open file
+	UNKNOWN_TK,		 // Error: Unknown token
+	FILE_FAIL,		 // Error: Can't read from the file
+	FILE_EMPTY,		 // Error: Code file is empty
+	LEX_TABLE_EMPTY, // Error: Syntax: Lexemes table is empty
+	PEEK_ERROR,		 // Error: Can't peek
+	MUST_BE_ID_OR_CONST,
+	MUST_BE_CPB,
+	// TODO: Add other types of error++
 };
 
 
@@ -67,3 +75,4 @@ private:
 
 
 #endif //LECS_PARS_LEXEM_H
+
