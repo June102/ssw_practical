@@ -53,84 +53,93 @@ std::vector<Lexem> Lexer::ScanCode() {
  * @return lexeme
  */
 Lexem Lexer::getLex() {
-    try {
-        auto ch = getCurrentCurs();
-        while (ch == -1 || ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t') {
-            if (ch == '\n') line++;
+	try {
+		auto ch = getCurrentCurs();
+		while (ch == -1 || ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t') {
+			if (ch == '\n') line++;
 
-            if (code.eof()) // if end of files
-                return Lexem("EOF", eof_tk, line);
-            ch = getChar();
-        }
+			if (code.eof()) // if end of files
+				return Lexem("EOF", eof_tk, line);
+			ch = getChar();
+		}
 
-        auto isId = [](char ch) {
-            return std::isalpha(static_cast<unsigned char>(ch)) ||
-                   std::isdigit(static_cast<unsigned char>(ch));
-        };
-
-
-        std::string lex;
-        if (std::isdigit(static_cast<unsigned char>(ch))) { // Constants (Numbers)
-            while (std::isdigit(static_cast<unsigned char>(ch))) {
-                lex += ch;
-                ch = getChar();
-            }
+		auto isId = [](char ch) {
+			return std::isalpha(static_cast<unsigned char>(ch)) ||
+				std::isdigit(static_cast<unsigned char>(ch));
+		};
 
 
-            return Lexem(std::move(lex), constant_tk, line);
-        } else if (std::isalpha(static_cast<unsigned char>(ch))) { // Identificators
-            while(isId(ch)) {
-                lex += ch;
-                ch = getChar();
-            }
+		std::string lex;
+		if (std::isdigit(static_cast<unsigned char>(ch))) { // Constants (Numbers)
+			while (std::isdigit(static_cast<unsigned char>(ch))) {
+				lex += ch;
+				ch = getChar();
+			}
 
-            if (lex == "program")      { return Lexem(std::move(lex), program_tk, line); }
-            else if (lex == "var")     { return Lexem(std::move(lex), var_tk, line);     }
-            else if (lex == "begin")   { return Lexem(std::move(lex), begin_tk, line);   }
-            else if (lex == "integer") { return Lexem(std::move(lex), type_tk, line);    }
-            else if (lex == "end")     { return Lexem(std::move(lex), end_tk, line);     }
-            else { // it is ID
-                return Lexem(std::move(lex), id_tk, line);
-            }
-        } else if (std::ispunct(static_cast<unsigned char>(ch))) { // Other symbols
-            tokens tok;
-            switch (ch) {
-                case ',' : tok = comma_tk; break;
-                case '.' : tok = dot_tk;   break;
-                case ':' : tok = ddt_tk;   break;
-                case ';' : tok = semi_tk;  break;
-                case '=' : tok = eqv_tk;   break;
-                case '+' : tok = add_tk;   break;
-                case '-' : tok = sub_tk;   break;
-                case '*' : tok = mul_tk;   break;
-                case '/' : tok = div_tk;   break; // TODO: rewrite for Pascal div
-                default: {
-                    PrintError(UNKNOWN_TK);
-                    tok = unknown_tk;
-                    break;
-                }
 
-            }
-            lex += ch;
+			return Lexem(std::move(lex), constant_tk, line);
+		}
+		else if (std::isalpha(static_cast<unsigned char>(ch))) { // Identificators
+			while (isId(ch)) {
+				lex += ch;
+				ch = getChar();
+			}
 
-            if (tok == ddt_tk) {
-                ch = getChar();
-                if (ch == '=') {
-                    lex += ch;
-                    tok = ass_tk;
-                }
-            }
+			if (lex == "program") { return Lexem(std::move(lex), program_tk, line); }
+			else if (lex == "var") { return Lexem(std::move(lex), var_tk, line); }
+			else if (lex == "begin") { return Lexem(std::move(lex), begin_tk, line); }
+			else if (lex == "integer") { return Lexem(std::move(lex), type_tk, line); }
+			else if (lex == "end") { return Lexem(std::move(lex), end_tk, line); }
+			else if (lex == "div") { return Lexem(std::move(lex), div_tk, line); }
+			else { // it is ID
+				return Lexem(std::move(lex), id_tk, line);
+			}
+		}
+		else if (std::ispunct(static_cast<unsigned char>(ch))) { // Other symbols
+			tokens tok;
+			switch (ch) {
+			case ',': tok = comma_tk; break;
+			case '.': tok = dot_tk;   break;
+			case ':': tok = ddt_tk;   break;
+			case ';': tok = semi_tk;  break;
+			case '=': tok = eqv_tk;   break;
+			case '+': tok = add_tk;   break;
+			case '-': tok = sub_tk;   break;
+			case '*': tok = mul_tk;   break;
+			case '(': tok = opb_tk;   break;
+			case ')': tok = cpb_tk;   break;
+			//case '/': tok = div_tk;   break; // TODO: rewrite for Pascal div++
+			default: {
+				//std::cerr << "<E> Unknown token " << ch << std::endl;
+				PrintError(UNKNOWN_TK);
+				tok = unknown_tk;
+				break;
+			}
 
-            getChar(); // some kind of k o s t y l; here we look on \n
-            return Lexem(std::move(lex), tok, line);
-        } else {
-            PrintError(UNKNOWN_TK);
-        }
+			}
+			lex += ch;
 
-        return Lexem("", unknown_tk, line);
-    } catch (const std::exception &exp) {
-        return Lexem("", unknown_tk, line);
-    }
+			if (tok == ddt_tk) {
+				ch = getChar();
+				if (ch == '=') {
+					lex += ch;
+					tok = ass_tk;
+				}
+			}
+
+			getChar(); // some kind of k o s t y l; here we look on \n
+			return Lexem(std::move(lex), tok, line);
+		}
+		else {
+			//std::cerr << "<E> Unknown token " << ch << std::endl;
+			PrintError(UNKNOWN_TK);
+		}
+
+		return Lexem("", unknown_tk, line);
+	}
+	catch (const std::exception & exp) {
+		return Lexem("", unknown_tk, line);
+	}
 }
 
 
