@@ -35,27 +35,6 @@ public:
 	void buildExpTree(tree_t* t_tree, std::string expr);
 	friend Syntax;
 };
-void tree_t::ChangeNodeValue(const std::string& node_name)
-{
-	value = node_name;
-}
-tree_t::tree_t()
-{
-	left_node = nullptr;
-	right_node = nullptr;
-	parent_node = nullptr;
-}
-void tree_t::PrintTree(tree_t* tree)
-{
-	if (tree == NULL)
-	{
-		std::cout << ".";
-		return;
-	}
-	std::cout << tree->value;
-	PrintTree(tree->left_node);
-	PrintTree(tree->right_node);
-}
 class Syntax {
 public:
 	explicit Syntax(std::vector<Lexem>&& t_lex_table);
@@ -68,6 +47,7 @@ private:
 	std::map<std::string, Variable> id_map;      // our table of identifiers
 	tree_t* tree_ptr;
 	tree_t* pascal_tree; // our syntax tree
+	Error_Msg Err;
 	lex_it getNextLex(lex_it& iter);
 	lex_it peekLex(int N, lex_it t_iter);
 
@@ -78,8 +58,7 @@ private:
 	std::list<std::string> vardParse(lex_it& t_iter);
 	int   blockParse(lex_it& t_iter);
 	int   programParse(lex_it& t_iter);
-
-	void printError(errors t_err, Lexem lex);
+	
 	bool checkLexem(const lex_it& t_iter, const tokens& t_tok);
 	bool isVarExist(const std::string& t_var_name);
 	void updateVarTypes(const std::list<std::string>& t_var_list,
