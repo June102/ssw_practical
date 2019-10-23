@@ -18,7 +18,6 @@ Lexer::~Lexer() {
     code.close();
 }
 
-void PrintError(errors t_err);
 /**
  * @brief Scan code and build table of lexemes
  * @param[in] file_path - path to the file with code
