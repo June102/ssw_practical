@@ -10,6 +10,11 @@
 #include <vector>
 #include "Lexem.h"
 
+struct Error_Msg {
+public:
+	void PrintError(errors t_err);
+	void printError(errors t_err, Lexem lex);
+};
 
 class Lexer {
 public:
