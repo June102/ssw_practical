@@ -18,22 +18,22 @@ public:
 
 class Lexer {
 public:
-    explicit Lexer(const char *file_path);
-    std::vector<Lexem> ScanCode();
+	explicit Lexer(const char* file_path);
+	std::vector<Lexem> ScanCode();
 
-    ~Lexer();
+	~Lexer();
 private:
-    std::ifstream      code;
-    char               cursor  { -1 };
-    int                line    { 1 };
-    std::vector<Lexem> lex_table;
+	std::ifstream      code;
+	char               cursor{ -1 };
+	int                line{ 1 };
+	std::vector<Lexem> lex_table;
 
-    Lexem getLex();
-    char  getChar();
-
-    inline char getCurrentCurs() {
-        return cursor;
-    }
+	Lexem getLex();
+	char  getChar();
+	Error_Msg Err;
+	inline char getCurrentCurs() {
+		return cursor;
+	}
 };
 
 
