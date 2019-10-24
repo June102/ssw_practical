@@ -214,7 +214,7 @@ int Syntax::vardpParse(Syntax::lex_it& t_iter, tree_t* t_tree) {
 	}
 
 	updateVarTypes(var_list, type_iter->GetName());
-	pascal_tree->buildVarTree(var_list, t_tree, id_map);//создаётся дерево идентификатор-тип и далее прикрепляется к основному
+	t_tree->buildVarTree(var_list, t_tree, id_map);//создаётся дерево идентификатор-тип и далее прикрепляется к основному
 	auto forwrd_lex = peekLex(1, t_iter);
 	if (checkLexem(forwrd_lex, var_tk) || checkLexem(forwrd_lex, id_tk)) {
 		if (checkLexem(forwrd_lex, var_tk))
@@ -222,7 +222,7 @@ int Syntax::vardpParse(Syntax::lex_it& t_iter, tree_t* t_tree) {
 		vardpParse(t_iter, t_tree->right_node);
 	}
 	else {
-		pascal_tree->freeTreeNode(t_tree->right_node->right_node);//удаляем последний лишний $
+		t_tree->freeTreeNode(t_tree->right_node->right_node);//удаляем последний лишний $
 	}
 	return EXIT_SUCCESS;
 }
@@ -326,7 +326,8 @@ int Syntax::stateParse(lex_it& t_iter, tree_t* t_tree) {
 			Err.printError(MUST_BE_ASS, *t_iter);
 			return -EXIT_FAILURE;
 		}
-		t_tree = t_tree->left_node = pascal_tree->buildTreeStub(t_tree, ":=") ;
+		t_tree = t_tree->left_node ;
+		t_tree = pascal_tree->buildTreeStub(t_tree, ":=") ;
 		t_tree->left_node = pascal_tree->buildTreeStub(t_tree, iter->GetName());
 		if (expressionParse(t_iter, expr) == 0)//постройка дерева арифм выражения
 			if (!expr.empty())
