@@ -57,6 +57,12 @@ enum errors {
 	// TODO: Add other types of error++
 };
 
+struct Error_Msg {
+public:
+	void PrintError(errors t_err);
+	void printError(errors t_err, Lexem lex);
+};
+
 
 class Lexem {
 public:
