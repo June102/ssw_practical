@@ -12,6 +12,7 @@
 #include <string>
 #include <queue>
 #include <utility>
+#include <iomanip>
 
 class Tree {
 public:
@@ -79,8 +80,11 @@ public:
 
 
     void PrintTree() {
-        std::cout << this << "\t" << this->value << "\t"
-                  << this->left << "\t" << this->right << std::endl;
+        std::cout << this << "\t" << this->value
+                  << ((this->value.size() >= 4) ? "\t " : "\t\t ")
+                  << this->left
+                  << ((this->left == nullptr) ? "\t\t\t " : "\t ")
+                  << this->right << std::endl;
         if (this->left != nullptr) this->left->PrintTree();
         if (this->right != nullptr) this->right->PrintTree();
     }
@@ -113,18 +117,21 @@ public:
     }
 
 
-    void FreeTree() {
-        if (this->left  != nullptr) this->left->FreeTree();
-        if (this->right != nullptr) this->right->FreeTree();
-        parent = nullptr;
-        value  = "";
-        alloc  = false;
+
+    void FreeLeftNode() {
+        FreeTree(this->left);
     }
 
-    static void FreeTree(Tree *&t_tree) { // used like Tree::FreeTree(root);
+
+    void FreeRightNode() {
+        FreeTree(this->right);
+    }
+
+
+    static void FreeTree(Tree *&t_tree) {
         try {
-            if (t_tree->left  != nullptr) FreeTree(t_tree);
-            if (t_tree->right != nullptr) FreeTree(t_tree);
+            if (t_tree->left  != nullptr) FreeTree(t_tree->left);
+            if (t_tree->right != nullptr) FreeTree(t_tree->right);
             delete t_tree;
             t_tree = nullptr;
         } catch (const std::exception &exp) {
@@ -142,7 +149,15 @@ private:
     Tree *right;
     Tree *parent;
     std::string value;
-    bool alloc { false }; // allocation flag
+    bool alloc { false };
+
+    void FreeTree() {
+        if (this->left  != nullptr) this->left->FreeTree();
+        if (this->right != nullptr) this->right->FreeTree();
+        parent = nullptr;
+        value  = "";
+        alloc  = false;
+    }
 };
 
 
