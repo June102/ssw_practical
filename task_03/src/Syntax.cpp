@@ -13,9 +13,29 @@
  * <var dec>     ::= <id> { , <var dec> }
  * <state part>  ::= <compound>
  * <compound>    ::= begin <state> { ; <state> } end
- * <state>       ::= <assign> | <compound> | <your_other_operations>
+ * <state>       ::= <assign> | <compound> | <while state> | <for state> | <if state>
+ * <while state> ::= while <compare> do <state>
+ * <for state>	 ::= for <id> := <constant> (to | downto) <constant> do <state> 
+ * <if state>	 ::= if <compare> then <state> { ; else <state> }
  * <assign>      ::= <id> := <exp> ;
- * <exp>         ::= <id> | <constant> | <your_other_operations>
+ * <exp>         ::= <id> | <constant> | <arith exp> | <compare> | <log exp>
+ * <arith exp>   ::= <add> | <sub> | <mul> | <div>
+ * <add>	 ::= <exp> + <exp>
+ * <sub>	 ::= <exp> - <exp>
+ * <div>	 ::= <exp> div <exp>
+ * <mul>	 ::= <exp> * <exp>
+ * <compare>	 ::= <eq> | <geq> | <seq> | <gr> | <sm> | <neq>
+ * <eq>		 ::= <exp> == <exp>
+ * <geq>	 ::= <exp> >= <exp>
+ * <seq>	 ::= <exp> <= <exp>
+ * <gr>		 ::= <exp> > <exp>
+ * <sm>		 ::= <exp> < <exp>
+ * <neq>	 ::= <exp> <> <exp>
+ * <log exp>	 ::= <or> | <and> | <xor> | <nand>
+ * <or>		 ::= <exp> or <exp>
+ * <and>	 ::= <exp> and <exp>
+ * <xor>	 ::= <exp> xor <exp>
+ * <nand>	 ::= <exp> nand <exp>
  * <type>        ::= integer
  * <id>          ::= a-z
  * <constant>    ::= 0-9
