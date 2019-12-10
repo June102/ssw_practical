@@ -623,7 +623,6 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 		result_tree = rep_tree;
 		break;
 	}
-		break;
 	case begin_tk: {
 		auto* tree_comp = compoundParse(t_iter);
 		getNextLex(t_iter);
