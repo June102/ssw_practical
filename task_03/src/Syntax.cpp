@@ -380,6 +380,11 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 			printError(UNKNOWN_ID, *t_iter);
 			return nullptr;
 		}
+		if (isVarIter(iter->GetName()))
+		{
+			printError(VAR_ITER, *iter);
+			return nullptr;
+		}
 		Tree* tree_exp;
 		auto var_iter = iter;
 		getNextLex(t_iter);
@@ -469,11 +474,13 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 	case for_tk: {
 		auto* tree_exp = Tree::CreateNode(iter->GetName());
 		auto iter = getNextLex(t_iter);
+		auto Var_Iter = iter;
 		if (!checkLexem(iter, id_tk))
 		{
 			printError(MUST_BE_ID, *t_iter);
 			return nullptr;
 		}
+		SetForIter(iter->GetName(), 1);
 		if (!isVarExist(iter->GetName()))
 		{
 			printError(UNKNOWN_ID, *iter);
@@ -560,6 +567,7 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 		}
 		tree_exp->AddRightTree(tree_state);
 		result_tree = tree_exp;
+		SetForIter(Var_Iter->GetName(), 0);
 	}
 		break;
 	case while_tk: {
@@ -623,6 +631,7 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 		result_tree = rep_tree;
 		break;
 	}
+		break;
 	case begin_tk: {
 		auto* tree_comp = compoundParse(t_iter);
 		getNextLex(t_iter);
@@ -652,19 +661,25 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
  * @return -EXIT_FAILURE - if expression part doesn't matched to grammar
  */
 int Syntax::expressionParse(lex_it& t_iter, std::vector<Lexem>& expr) {
-	if (t_iter->GetToken() != semi_tk)
+	if (!checkLexem(peekLex(1, t_iter), semi_tk))
 	{
 		auto iter = getNextLex(t_iter);
 		switch (iter->GetToken()) {
 		case id_tk: {
 			if (!isVarExist(iter->GetName()))
 				printError(UNKNOWN_ID, *t_iter);
-			if (isVarArray(t_iter, expr))
+			if (!checkLexem(peekLex(1, iter), semi_tk))
+				if (!checkExpr(iter))
+				{
+					printError(UNACC_EXP, *iter);
+					return -EXIT_FAILURE;
+				}
+			if (isVarArray(t_iter))
 			{
-				for (int i = 0; i < 3; i++)
+				while (!checkLexem(iter, csb_tk))
 				{
 					expr.emplace_back(*iter);
-					iter = getNextLex(t_iter);					
+					iter = getNextLex(t_iter);
 				}
 			}
 		}
@@ -698,11 +713,6 @@ int Syntax::expressionParse(lex_it& t_iter, std::vector<Lexem>& expr) {
 			break;
 		}
 		case sub_tk: { // like a := -3;
-			/*if (!checkLexem((peekLex(1, t_iter)), constant_tk) && !checkLexem((peekLex(1, t_iter)), id_tk))
-			{
-				printError(MUST_BE_ID_OR_CONST, *t_iter);
-				return -EXIT_FAILURE;
-			}*/
 			expr.emplace_back(*iter);
 			if (expressionParse(t_iter, expr) == -1)
 				return -EXIT_FAILURE;
@@ -860,14 +870,41 @@ Tree* Syntax::BuildExpTree(Tree* t_tree, std::vector<Lexem> expr)
 		expr.insert(expr.begin(), Zero);
 	}
 	int expr_size = expr.size();
-	if (expr_size == 4)
+	if (expr.at(0).GetToken() == opb_tk)
 	{
-		if (expr.at(0).GetToken() == id_tk && expr.at(1).GetToken() == osb_tk && expr.at(3).GetToken() == csb_tk)
+		int n = 1;
+		while (expr.at(n).GetToken() != cpb_tk)
+			n++;
+		if (n == expr_size - 1)
 		{
-			t_tree = Tree::CreateNode("array");
-			t_tree->AddLeftNode(expr.at(0).GetName());
-			t_tree->AddRightNode(expr.at(2).GetName());
+			std::vector <Lexem> ExpPart;
+			for (int i = 1; i < expr_size - 1; i++)
+			{
+				ExpPart.emplace_back(expr.at(i));
+			}
+			t_tree = BuildExpTree(t_tree, ExpPart);
 			return t_tree;
+		}
+	}
+	if (expr.at(0).GetToken() == id_tk)
+	{
+		if (isVarArray(expr.at(0).GetName()))
+		{
+			int n = 2;
+			while (expr.at(n).GetToken() != csb_tk)
+				n++;
+			if (n == expr_size - 1)
+			{
+				std::vector <Lexem> ExpPart;
+				t_tree = Tree::CreateNode("array");
+				t_tree->AddLeftNode(expr.at(0).GetName());
+				for (int i = 2; i < expr_size - 1; i++)
+				{
+					ExpPart.emplace_back(expr.at(i));
+				}
+				t_tree->AddRightTree(BuildExpTree(t_tree->GetRightNode(), ExpPart));
+				return t_tree;
+			}
 		}
 	}
 	if (expr_size == 1)
@@ -882,7 +919,7 @@ Tree* Syntax::BuildExpTree(Tree* t_tree, std::vector<Lexem> expr)
 	int Curr_pr;
 	for (int i = 0; i < expr_size; i++)
 	{
-		if (expr.at(i).GetToken() == constant_tk || expr.at(i).GetToken() == id_tk || expr.at(i).GetToken() == osb_tk || expr.at(i).GetToken() == csb_tk)
+		if (expr.at(i).GetToken() == constant_tk || expr.at(i).GetToken() == id_tk)
 			continue;
 		else
 		{
@@ -891,6 +928,12 @@ Tree* Syntax::BuildExpTree(Tree* t_tree, std::vector<Lexem> expr)
 			if (expr.at(i).GetToken() == opb_tk)
 			{
 				while (expr.at(i).GetToken() != cpb_tk)
+					i++;
+				i++;
+			}
+			if (expr.at(i).GetToken() == osb_tk)
+			{
+				while (expr.at(i).GetToken() != csb_tk)
 					i++;
 				i++;
 			}
@@ -1038,12 +1081,18 @@ void Syntax::printError(errors t_err, Lexem lex) {
 		break;
 	}
 	case UNACC_TYPE: {
-		std::cerr << "<E> Syntax: Unecceptable type of " << lex.GetName() << " identifier" << std::endl;
+		std::cerr << "<E> Syntax: Unecceptable type of " << lex.GetName() 
+			<< " identifier on " << lex.GetLine() << " line" << std::endl;
 		break;
 	}
 	case MUST_BE_THEN: {
 		std::cerr << "<E> Syntax: Must be 'then' instead '" << lex.GetName()
 			<< "' on " << lex.GetLine() << " line" << std::endl;
+		break;
+	}
+	case VAR_ITER: {
+		std::cerr << "<E> Syntax: Iterator '" << lex.GetName()
+			<< "' on " << lex.GetLine() << " line, can't be changed inside the sycle" << std::endl;
 		break;
 	}
 					// TO+DO: Add remaining error types 
@@ -1146,15 +1195,73 @@ bool Syntax::CheckVarType(const std::string& t_var_name, int log_count)
 		if (getVarType(t_var_name) == "boolean")
 			return false;
 	}
+	return true;
 }
 
-bool Syntax::isVarArray(lex_it& t_iter, std::vector<Lexem>& expr)
+bool Syntax::checkExpr(lex_it& t_iter)
+{
+	auto iter = t_iter;
+	auto First_var = iter;
+	auto Second_var = peekLex(2, iter);
+	auto Operation = peekLex(1, iter);
+	if (First_var->GetToken() == constant_tk && CheckVarType(Second_var->GetName(), 1))
+	{
+		return false;
+	}
+	if (Second_var->GetToken() == constant_tk && CheckVarType(First_var->GetName(), 1))
+	{
+		return false;
+	}
+	if (CheckVarType(First_var->GetName(), 1) && CheckVarType(Second_var->GetName(), 1))
+		if (Operation->GetToken() == or_tk || Operation->GetToken() == xor_tk || Operation->GetToken() == and_tk)
+		{
+			log_count++;
+			return true;
+		}
+		else
+			return false;
+	else
+		if (!CheckVarType(First_var->GetName(), 0) || !CheckVarType(Second_var->GetName(), 0))
+			return false;
+	return true;
+}
+
+bool Syntax::isVarArray(lex_it& t_iter, std::vector<Lexem> expr)
 {
 	auto map_iter = id_map.find(t_iter->GetName());
 	if (map_iter->second.array_l != 0)
 	{
 		auto exp_iter = peekLex(1, t_iter);
 		if (checkLexem(peekLex(1, t_iter), osb_tk) && (expressionParse(exp_iter, expr)!= -1) && checkLexem(peekLex(expr.size()+2, t_iter), csb_tk))
+		{
+			return true;
+		}
+		else
+		{
+			printError(NO_INDEX_OF_ARRAY, *t_iter);
+			return false;
+		}
+
+	}
+	return false;
+}
+
+bool Syntax::isVarArray(std::string Var_Name)
+{
+	auto map_iter = id_map.find(Var_Name);
+	if (map_iter->second.array_l == 0)
+		return false;
+	else
+		return true;
+}
+bool Syntax::isVarArray(lex_it& t_iter)
+{
+	std::vector<Lexem> expr;
+	auto map_iter = id_map.find(t_iter->GetName());
+	if (map_iter->second.array_l != 0)
+	{
+		auto exp_iter = peekLex(1, t_iter);
+		if (checkLexem(peekLex(1, t_iter), osb_tk) && (expressionParse(exp_iter, expr) != -1) && checkLexem(peekLex(expr.size() + 2, t_iter), csb_tk))
 		{
 			return true;
 		}
@@ -1190,6 +1297,16 @@ void Syntax::updateVarTypes(const std::list<std::string>& t_var_list,
 	}
 }
 
+void Syntax::SetForIter(std::string var_name, int T_F)
+{
+	id_map.find(var_name)->second.iterator = T_F;
+}
+
+bool Syntax::isVarIter(std::string var_name)
+{
+	auto map_iter = id_map.find(var_name);
+	return (map_iter->second.iterator == 1);
+}
 
 /**
  * @brief Build subtree of variable declaration part
