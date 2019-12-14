@@ -85,6 +85,7 @@ enum errors {
 	MUST_BE_UNTIL,	 // Error: Must be 'until'
 	UNACC_TYPE,		 // Error: Unacceptble type of identifier
 	MUST_BE_THEN,	 // Error: Must be 'then'
+	VAR_ITER,		 // Error: Var is Iterator
 };
 
 
