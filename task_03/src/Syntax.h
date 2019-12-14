@@ -46,12 +46,17 @@ private:
 
 	void printError(errors t_err, Lexem lex);
 	bool checkLexem(const lex_it& t_iter, const tokens& t_tok);
+	bool checkExpr(lex_it& t_iter);
 	bool isVarExist(const std::string& t_var_name);
 	std::string getVarType(const std::string& t_var_name);
 	bool CheckVarType(const std::string& t_var_name, int log_count);
-	bool isVarArray(lex_it& t_iter, std::vector<Lexem>& expr);
+	bool isVarArray(lex_it& t_iter, std::vector<Lexem> expr);
+	bool isVarArray(lex_it& t_iter);
+	bool isVarArray(std::string Var_Name);
 	void updateVarTypes(const std::list<std::string>& t_var_list,
 		const std::string& t_type_name, int t_array_l);
+	void SetForIter(std::string var_name, int T_F);
+	bool isVarIter(std::string var_name);
 	void buildVarTree(const std::list<std::string>& t_var_list, Tree* t_tree, int Length);
 
 	void createVarTree(Tree* t_tree, Tree* t_donor_tree, int lvl);
@@ -59,5 +64,6 @@ private:
 	Tree* BuildExpTree(Tree* t_tree, std::vector<Lexem> expr);
 	int ArrayParse(Syntax::lex_it& t_iter, std::list<std::string> var_list);
 };
+
 
 #endif //LECS_PARS_SYNTAX_H
