@@ -14,6 +14,7 @@ public:
 	std::string type;
 	std::string value;
 	int			array_l;
+	int iterator = 0;
 };
 
 
