@@ -291,7 +291,8 @@ std::list<std::string> Syntax::vardParse(lex_it& t_iter) {
 		return std::list<std::string>();
 	}
 
-	if (isVarExist(iter->GetName())) printError(DUPL_ID_ERR, *iter);
+	if (isVarExist(iter->GetName())) 
+		printError(DUPL_ID_ERR, *iter);
 	else
 		id_map.emplace(iter->GetName(), Variable("?", "?", 0));
 
@@ -418,7 +419,7 @@ Tree* Syntax::stateParse(lex_it& t_iter) {
 			printError(MUST_BE_SEMI, *t_iter);
 			return nullptr;
 		}
-		if (!CheckVarType(var_iter->GetName(), log_count))
+		if (!CheckVarType(var_iter, log_count))
 		{
 			printError(UNACC_TYPE, *var_iter);
 			return nullptr;
@@ -1095,6 +1096,11 @@ void Syntax::printError(errors t_err, Lexem lex) {
 			<< "' on " << lex.GetLine() << " line, can't be changed inside the sycle" << std::endl;
 		break;
 	}
+	case MUST_BE_ASS: {
+		std::cerr << "<E> Syntax: Must be ':=' instead '" << lex.GetName()
+			<< "' on " << lex.GetLine() << " line" << std::endl;
+		break;
+	}
 					// TO+DO: Add remaining error types 
 	default: {
 		std::cerr << "<E> Syntax: Undefined type of error" << std::endl;
@@ -1183,16 +1189,20 @@ std::string Syntax::getVarType(const std::string& t_var_name)
 	return map_iter->second.type;
 }
 
-bool Syntax::CheckVarType(const std::string& t_var_name, int log_count)
+bool Syntax::CheckVarType(lex_it& t_iter, int log_count)
 {
 	if (log_count > 0)
 	{
-		if (getVarType(t_var_name) != "boolean")
+		if (t_iter->GetToken() == constant_tk)
+			return false;
+		if (getVarType(t_iter->GetName()) != "boolean")
 			return false;
 	}
 	else
 	{
-		if (getVarType(t_var_name) == "boolean")
+		if (t_iter->GetToken() == constant_tk)
+			return true;
+		if (getVarType(t_iter->GetName()) == "boolean")
 			return false;
 	}
 	return true;
@@ -1204,15 +1214,7 @@ bool Syntax::checkExpr(lex_it& t_iter)
 	auto First_var = iter;
 	auto Second_var = peekLex(2, iter);
 	auto Operation = peekLex(1, iter);
-	if (First_var->GetToken() == constant_tk && CheckVarType(Second_var->GetName(), 1))
-	{
-		return false;
-	}
-	if (Second_var->GetToken() == constant_tk && CheckVarType(First_var->GetName(), 1))
-	{
-		return false;
-	}
-	if (CheckVarType(First_var->GetName(), 1) && CheckVarType(Second_var->GetName(), 1))
+	if (CheckVarType(First_var, 1) && CheckVarType(Second_var, 1))
 		if (Operation->GetToken() == or_tk || Operation->GetToken() == xor_tk || Operation->GetToken() == and_tk)
 		{
 			log_count++;
@@ -1221,12 +1223,12 @@ bool Syntax::checkExpr(lex_it& t_iter)
 		else
 			return false;
 	else
-		if (!CheckVarType(First_var->GetName(), 0) || !CheckVarType(Second_var->GetName(), 0))
+		if (!CheckVarType(First_var, 0) || !CheckVarType(Second_var, 0))
 			return false;
 	return true;
 }
 
-bool Syntax::isVarArray(lex_it& t_iter, std::vector<Lexem> expr)
+bool Syntax::isVarArray(lex_it& t_iter, std::vector<Lexem>& expr)
 {
 	auto map_iter = id_map.find(t_iter->GetName());
 	if (map_iter->second.array_l != 0)
