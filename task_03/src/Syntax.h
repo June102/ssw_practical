@@ -49,8 +49,8 @@ private:
 	bool checkExpr(lex_it& t_iter);
 	bool isVarExist(const std::string& t_var_name);
 	std::string getVarType(const std::string& t_var_name);
-	bool CheckVarType(const std::string& t_var_name, int log_count);
-	bool isVarArray(lex_it& t_iter, std::vector<Lexem> expr);
+	bool CheckVarType(lex_it& t_iter, int log_count);
+	bool isVarArray(lex_it& t_iter, std::vector<Lexem>& expr);
 	bool isVarArray(lex_it& t_iter);
 	bool isVarArray(std::string Var_Name);
 	void updateVarTypes(const std::list<std::string>& t_var_list,
